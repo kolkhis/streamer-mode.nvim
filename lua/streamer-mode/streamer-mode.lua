@@ -86,21 +86,32 @@ M.exclude = {
 --- Setup function for the user. Configures default behavior.
 --- Usage: >lua
 ---	  require('streamer-mode').setup({
----	     preset = true, -- DEPRECATED - Use `use_defaults`
----	     use_defaults = true -- | false
+---	     use_defaults = true, -- DEPRECATED - use the 'exclude' config options.
 ---      -- Use custom paths
 ---      paths = { '~/projects/*' },
 ---      -- Set Streamer Mode to be active when nvim is launched
----	     default_mode = 'on',
+---	     default_state = 'on',
 ---      -- Set Streamer Mode behavior. :h sm.level
 ---	     level = 'edit',
 ---      -- A listlike table of default paths to exlude
----	     keywords = { 'export', 'alias', 'api_key' }
+---	     keywords = { 'export', 'alias', 'api_key' },
+---      -- Exclude all the default keywords and only use the ones you specify
+---      exclude_all_default_keywords = false, -- | true,
+---      -- Only exclude the given keywords from the default values
+---      exclude_default_keywords = { 'keyword1', 'keyword2' },
+---      -- Exclude the default path (which is '*', all paths) and only use the ones you specify
+---      exclude_all_default_paths = true, 
 ---	   })
 ---
 --- Parameters: ~
 ---   • {opts} Optional Table of named paths
----     • use_defaults: boolean = true | false
+---     • use_defaults: DEPRECATED - use 'exclude' options instead.
+---     • exclude_all_default_keywords: Use defaults but exclude these.
+---         - exclude_all_default_keywords = { 'alias', 'export' }
+---     • exclude_all_default_keywords: Do not use default keywords, only use the
+---       keywords you specify.
+---     • exclude_all_default_paths: Do not use default paths, only use the paths you
+---       specify.  
 ---     • keywords: table = { 'keywords', 'to', 'conceal' }
 ---     • paths: table = { '*/paths/*', '*to_use/*' }
 ---     • level: string = 'secure' -- | 'soft' | 'edit'
@@ -120,15 +131,15 @@ M.exclude = {
 ---
 --- :h streamer-mode.setup
 ---@param user_opts? table
----keywords: list[string],
----paths: list[string],
----default_mode: string,
+---keywords: list{string},
+---paths: list{string},
+---default_state: string,
 ---conceal_char: string,
 ---level: string,
 ---exclude_all_default_paths: bool,
 ---exclude_all_default_keywords: bool,
----exclude_default_paths: table{string},
----exclude_default_keywords: table{string},
+---exclude_default_paths: list{string},
+---exclude_default_keywords: list{string},
 function M:configure_options(user_opts)
     if not user_opts then
         self:start_with_defaults()
@@ -137,6 +148,19 @@ function M:configure_options(user_opts)
     user_opts = user_opts or {}
     self.opts.default_state = user_opts.default_state or 'off'
     self.opts.level = user_opts.level or 'secure'
+
+    if user_opts.keywords then
+        for i = 1, #user_opts.keywords do
+            self.opts.keywords[#self.opts.keywords + 1] = user_opts.keywords[i]
+        end
+    end
+
+    if user_opts.paths then
+        for i = 1, #user_opts.paths do
+            self.opts.paths[#self.opts.paths + 1] = user_opts.paths[i]
+        end
+    end
+
 
     if not user_opts.exclude_all_default_keywords then
         if user_opts.exclude_default_keywords then
@@ -152,8 +176,18 @@ function M:configure_options(user_opts)
             end
         end
     else
-        for k, _ in pairs(self.exclude.keywords) do
-            self.exclude.keywords[k] = true
+        for keyword, _ in pairs(self.exclude.keywords) do
+            local present = false
+            if user_opts.keywords then
+                for _, v in ipairs(user_opts.keywords) do
+                    if v == keyword then
+                        present = true
+                    end
+                end
+            end
+            if not present then
+                self.exclude.keywords[keyword] = true
+            end
         end
     end
 
@@ -167,12 +201,6 @@ function M:configure_options(user_opts)
     end
 
 
-
-    if user_opts.keywords then
-        for i = 1, #default_opts.keywords do
-            self.opts.keywords[#self.opts.keywords + 1] = default_opts.keywords[i]
-        end
-    end
 
     if user_opts.use_defaults or user_opts.use_defaults == nil then
         if user_opts.paths then
