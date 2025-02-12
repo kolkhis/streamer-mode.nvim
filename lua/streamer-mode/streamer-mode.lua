@@ -39,7 +39,14 @@ for _, keyword in ipairs(default_opts.keywords) do
     default_opts.patterns[#default_opts.patterns + 1] = M._BaseKeywordConcealPattern:format(keyword)
 end
 
-M.opts = {}
+M.opts = {
+    level = 'secure',
+    default_state = 'off',
+    conceal_char = '*',
+    paths = {},
+    patterns = {},
+    keywords = {},
+}
 
 M.conceal_augroup = vim.api.nvim_create_augroup('StreamerMode', { clear = true })
 M._matches = {}
@@ -49,24 +56,63 @@ M.cursor_levels = {
     soft = '',
 }
 
+M.exclude = {
+
+    keywords = {
+        ['api_key'] = false,
+        ['token'] = false,
+        ['client_secret'] = false,
+        ['powershell'] = false,
+        ['$env:'] = false,
+        ['export'] = false,
+        ['alias'] = false,
+        ['name'] = false,
+        ['userpassword'] = false,
+        ['username'] = false,
+        ['user.name'] = false,
+        ['user.password'] = false,
+        ['user.email'] = false,
+        ['email'] = false,
+        ['signingkey'] = false,
+        ['IdentityFile'] = false,
+        ['server'] = false,
+        ['host'] = false,
+        ['port'] = false,
+        ['credential.helper'] = false,
+    }
+}
+
+
 --- Setup function for the user. Configures default behavior.
 --- Usage: >lua
 ---	  require('streamer-mode').setup({
----	     preset = true, -- DEPRECATED - Use `use_defaults`
----	     use_defaults = true -- | false
+---	     use_defaults = true, -- DEPRECATED - use the 'exclude' config options.
 ---      -- Use custom paths
 ---      paths = { '~/projects/*' },
 ---      -- Set Streamer Mode to be active when nvim is launched
----	     default_mode = 'on',
+---	     default_state = 'on',
 ---      -- Set Streamer Mode behavior. :h sm.level
 ---	     level = 'edit',
 ---      -- A listlike table of default paths to exlude
----	     keywords = { 'export', 'alias', 'api_key' }
+---	     keywords = { 'export', 'alias', 'api_key' },
+---      -- Exclude all the default keywords and only use the ones you specify
+---      exclude_all_default_keywords = false, -- | true,
+---      -- Only exclude the given keywords from the default values
+---      exclude_default_keywords = { 'keyword1', 'keyword2' },
+---      -- Exclude the default path (which is '*', all paths) and only use the ones you specify
+---      exclude_all_default_paths = true, 
 ---	   })
 ---
 --- Parameters: ~
 ---   • {opts} Optional Table of named paths
----     • use_defaults: boolean = true | false
+---     • use_defaults: DEPRECATED - use 'exclude' options instead.
+---     • exclude_all_default_keywords: Use defaults but exclude these.
+---         - exclude_all_default_keywords = { 'alias', 'export' }
+---     • exclude_all_default_keywords: Do not use default keywords, only use the
+---       keywords you specify.
+---     • exclude_default_paths: Do not use default paths, only use the paths you
+---       specify.  
+---     • exclude_all_default_paths: Same as `exclude_default_paths`
 ---     • keywords: table = { 'keywords', 'to', 'conceal' }
 ---     • paths: table = { '*/paths/*', '*to_use/*' }
 ---     • level: string = 'secure' -- | 'soft' | 'edit'
@@ -86,44 +132,116 @@ M.cursor_levels = {
 ---
 --- :h streamer-mode.setup
 ---@param user_opts? table
----keywords: list[string],
----paths: list[string],
----default_mode: string,
+---keywords: list{string},
+---paths: list{string},
+---default_state: string,
 ---conceal_char: string,
----level: string
+---level: string,
+---exclude_all_default_paths: bool,
+---exclude_all_default_keywords: bool,
+---exclude_default_paths: list{string},
+---exclude_default_keywords: list{string},
 function M:configure_options(user_opts)
+    if not user_opts then
+        self:start_with_defaults()
+        return
+    end
     user_opts = user_opts or {}
-    local opts = {}
+    self.opts.default_state = user_opts.default_state or 'off'
+    self.opts.level = user_opts.level or 'secure'
 
-    if user_opts.use_defaults or user_opts.use_defaults == nil then
-        opts = vim.tbl_deep_extend('force', default_opts, user_opts)
-        if user_opts.paths then
-            for i = 1, #default_opts.paths do
-                opts.paths[#opts.paths + 1] = default_opts.paths[i]
+    if user_opts.keywords then
+        for i = 1, #user_opts.keywords do
+            self.opts.keywords[#self.opts.keywords + 1] = user_opts.keywords[i]
+        end
+    end
+
+    if user_opts.paths then
+        for i = 1, #user_opts.paths do
+            self.opts.paths[#self.opts.paths + 1] = user_opts.paths[i]
+        end
+    end
+
+
+    if not user_opts.exclude_all_default_keywords then
+        if user_opts.exclude_default_keywords then
+            for _, v in ipairs(user_opts.exclude_default_keywords) do
+                self.exclude.keywords[v] = true
             end
         end
         if user_opts.keywords then
             for i = 1, #default_opts.keywords do
-                opts.keywords[#opts.keywords + 1] = default_opts.keywords[i]
+                if not self.exclude.keywords[default_opts[i]] then
+                    self.opts.keywords[#self.opts.keywords + 1] = default_opts.keywords[i]
+                end
+            end
+        end
+    else
+        for keyword, _ in pairs(self.exclude.keywords) do
+            local present = false
+            if user_opts.keywords then
+                for _, v in ipairs(user_opts.keywords) do
+                    if v == keyword then
+                        present = true
+                    end
+                end
+            end
+            if not present then
+                self.exclude.keywords[keyword] = true
+            end
+        end
+    end
+
+
+    if not user_opts.exclude_all_default_paths and not user_opts.exclude_default_paths then
+        if user_opts.paths then
+            for i = 1, #default_opts.paths do
+                self.opts.paths[#self.opts.paths + 1] = default_opts.paths[i]
+            end
+        end
+    end
+
+
+
+    if user_opts.use_defaults or user_opts.use_defaults == nil then
+        if user_opts.paths then
+            for i = 1, #default_opts.paths do
+                self.opts.paths[#self.opts.paths + 1] = default_opts.paths[i]
+            end
+        end
+        if user_opts.keywords then
+            for i = 1, #default_opts.keywords do
+                self.opts.keywords[#self.opts.keywords + 1] = default_opts.keywords[i]
             end
         end
     elseif user_opts.use_defaults == false then
-        opts = user_opts
+        self.opts = vim.tbl_deep_extend('force', self.opts, user_opts)
     end
 
-    self.opts = opts
-
-    if opts.keywords and default_opts.keywords then
-        if table.concat(opts.keywords) ~= table.concat(default_opts.keywords) then
-            self:generate_patterns(opts.keywords)
-        end
+    if self.opts.keywords then
+        self:generate_patterns(self.opts.keywords)
     end
 
-    self.default_conceallevel = vim.o.conceallevel
+
     vim.o.concealcursor = self.cursor_levels[self.opts.level]
-    if opts.default_state == 'on' then
+    if not self.enabled then
+        self.default_conceallevel = vim.o.conceallevel
+    end
+    if self.opts.default_state == 'on' then
         self:start_streamer_mode()
     end
+end
+
+function M:start_with_defaults()
+    self.opts = vim.tbl_deep_extend('force', self.opts, default_opts)
+    vim.o.concealcursor = self.cursor_levels[self.opts.level]
+    if not self.enabled then
+        self.default_conceallevel = vim.o.conceallevel
+    end
+    if self.opts.default_state == 'on' then
+        self:start_streamer_mode()
+    end
+    self:generate_patterns(self.opts.keywords)
 end
 
 ---Alias for `configure_options`
@@ -136,18 +254,24 @@ end
 ---the conceal patterns.
 ---@param keywords table list
 function M:generate_patterns(keywords)
+    self.opts.patterns = self.opts.patterns or {}
     for i = 1, #keywords do
-        self.opts.patterns[#self.opts.patterns + 1] = self._BaseKeywordConcealPattern:format(keywords[i])
+        if not self.exclude.keywords[keywords[i]] then
+            self.opts.patterns[#self.opts.patterns + 1] = self._BaseKeywordConcealPattern:format(keywords[i])
+        end
     end
 end
 
 ---Callback for autocmds.
 function M:add_match_conceals()
-    for i = 1, #self.opts.patterns do
-        table.insert(
-            self._matches,
-            vim.fn.matchadd('Conceal', self.opts.patterns[i], 9999, -1, { conceal = self.opts.conceal_char })
-        )
+    -- vim.notify("Options: " .. vim.inspect(self.opts))
+    if self.opts.patterns then
+        for i = 1, #self.opts.patterns do
+            table.insert(
+                self._matches,
+                vim.fn.matchadd('Conceal', self.opts.patterns[i], 9999, -1, { conceal = self.opts.conceal_char })
+            )
+        end
     end
 end
 
@@ -183,19 +307,25 @@ end
 
 ---Sets up conceals for environment variables
 function M:setup_conceal_autocmds()
-    for _, path in pairs(self.opts.paths) do
-        vim.api.nvim_create_autocmd({ 'BufEnter' }, {
-            pattern = path,
-            callback = function()
-                self:add_match_conceals()
-            end,
-            group = self.conceal_augroup,
-        })
+    if self.opts.paths then
+        for _, path in pairs(self.opts.paths) do
+            vim.api.nvim_create_autocmd({ 'BufEnter' }, {
+                pattern = path,
+                callback = function()
+                    self:add_match_conceals()
+                end,
+                group = self.conceal_augroup,
+            })
+        end
     end
 end
 
 ---Starts Streamer Mode. Alias for `add_conceals()`
 function M:start_streamer_mode()
+    -- vim.notify("Current options: " .. vim.inspect(self.opts))
+    -- if not self.opts.patterns then
+    --     self.setup({ use_defaults = true })
+    -- end
     self:add_conceals()
 end
 
@@ -214,10 +344,12 @@ end
 M.ssh_conceal_pattern =
     [[^-\{1,}BEGIN OPENSSH PRIVATE KEY-\{-1,}\n\zs\(\_.\{-}\)\ze-\{1,}END OPENSSH PRIVATE KEY-\{-1,}\n\?]]
 function M:start_ssh_conceals()
-    table.insert(
-        self._matches,
-        vim.fn.matchadd('Conceal', self.ssh_conceal_pattern, 9999, -1, { conceal = self.opts.conceal_char })
-    )
+    if self.ssh_conceal_pattern then
+        table.insert(
+            self._matches,
+            vim.fn.matchadd('Conceal', self.ssh_conceal_pattern, 9999, -1, { conceal = self.opts.conceal_char })
+        )
+    end
 end
 
 function M:setup_ssh_conceal_autocmds()

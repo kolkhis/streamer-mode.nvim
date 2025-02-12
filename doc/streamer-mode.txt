@@ -32,8 +32,19 @@ streamer-mode.setup({opts})
     An example of a custom configuration might look something like this:
 
     require('streamer-mode').setup{
-	-- Use default keywords in addition to your own
-	use_defaults = true,
+	use_defaults = true, -- Deprecated. Use the 'exclude' options instead.
+
+	-- Exclude all the default keywords and only use the ones you specify.
+	exclude_all_default_keywords = false, -- | true
+
+	-- Use defaults, but exclude the given keywords from the default values.
+	exclude_default_keywords = { 'alias', 'user.name' },
+
+	-- Exclude the default path (which is '*', all paths) and only use the 
+	-- ones you specify.
+	exclude_default_paths = true,
+	exclude_all_default_paths = true, -- Same as above
+
         keywords = {
           'address',
           'phone_number',
@@ -41,17 +52,15 @@ streamer-mode.setup({opts})
           'SSN',
           'email',
         },
-	paths = {
         -- Defaults to all paths and filetypes:
-	    '*',
-      },
+	paths = { '*' },
 
-      level = 'secure', -- | 'edit' | 'soft' (see more info below)
+        level = 'secure', -- | 'edit' | 'soft' (see more info below)
 
-      default_state = 'off',  -- | 'on' : Whether or not streamer mode turns
+        default_state = 'off',  -- | 'on' : Whether or not streamer mode turns
                              --           on when nvim is launched.
 
-      conceal_char = '*'  -- Default. This is what will be displayed instead
+        conceal_char = '*'  -- Default. This is what will be displayed instead
 			  -- of your secrets.
     })
 <
