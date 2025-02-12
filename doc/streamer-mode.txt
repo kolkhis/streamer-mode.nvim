@@ -42,7 +42,9 @@ streamer-mode.setup({opts})
 
 	-- Exclude the default path (which is '*', all paths) and only use the 
 	-- ones you specify.
-	exclude_all_default_paths = true, 
+	exclude_default_paths = true,
+	exclude_all_default_paths = true, -- Same as above
+
         keywords = {
           'address',
           'phone_number',
@@ -50,10 +52,8 @@ streamer-mode.setup({opts})
           'SSN',
           'email',
         },
-	paths = {
         -- Defaults to all paths and filetypes:
-	    '*',
-        },
+	paths = { '*' },
 
         level = 'secure', -- | 'edit' | 'soft' (see more info below)
 
