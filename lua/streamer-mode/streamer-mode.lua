@@ -130,24 +130,35 @@ M.exclude = {
 ---exclude_default_paths: table{string},
 ---exclude_default_keywords: table{string},
 function M:configure_options(user_opts)
+    if not user_opts then
+        self:start_with_defaults()
+        return
+    end
     user_opts = user_opts or {}
-
-    if user_opts.exclude_default_keywords then
-        for _, v in user_opts.exclude_default_keywords do
-            self.exclude.keywords[v] = true
-        end
-    end
-
-    if not user_opts.exclude_all_default_paths then
-        if user_opts.keywords then
-            for i = 1, #default_opts.keywords do
-                self.opts.keywords[#self.opts.keywords + 1] = default_opts.keywords[i]
-            end
-        end
-    end
+    self.opts.default_state = user_opts.default_state or 'off'
+    self.opts.level = user_opts.level or 'secure'
 
     if not user_opts.exclude_all_default_keywords then
-        -- TODO: Check for `exclude_keyword` for individual keyword exclusions
+        if user_opts.exclude_default_keywords then
+            for _, v in ipairs(user_opts.exclude_default_keywords) do
+                self.exclude.keywords[v] = true
+            end
+        end
+        if user_opts.keywords then
+            for i = 1, #default_opts.keywords do
+                if not self.exclude.keywords[default_opts[i]] then
+                    self.opts.keywords[#self.opts.keywords + 1] = default_opts.keywords[i]
+                end
+            end
+        end
+    else
+        for k, _ in pairs(self.exclude.keywords) do
+            self.exclude.keywords[k] = true
+        end
+    end
+
+
+    if not user_opts.exclude_all_default_paths then
         if user_opts.paths then
             for i = 1, #default_opts.paths do
                 self.opts.paths[#self.opts.paths + 1] = default_opts.paths[i]
@@ -155,12 +166,7 @@ function M:configure_options(user_opts)
         end
     end
 
-    -- if user_opts.exclude_default_keywords then
-    --     for i = 1, #user_opts.exclude_default_keywords do
-    --         if user_opts.exclude_default_keywords[i] == 'all' then
-    --         end
-    --     end
-    -- end
+
 
     if user_opts.keywords then
         for i = 1, #default_opts.keywords do
@@ -183,30 +189,30 @@ function M:configure_options(user_opts)
         self.opts = vim.tbl_deep_extend('force', self.opts, user_opts)
     end
 
-    -- self.opts = opts
-    for idx, v in pairs(user_opts) do
-        self.opts[idx] = v
-    end
-
     if self.opts.keywords then
         self:generate_patterns(self.opts.keywords)
     end
-    -- if self.opts.keywords and default_opts.keywords then
-    --     if table.concat(self.opts.keywords) ~= table.concat(default_opts.keywords) then
-    --         self:generate_patterns(self.opts.keywords)
-    --     end
-    -- end
 
-    self.default_conceallevel = vim.o.conceallevel
+
     vim.o.concealcursor = self.cursor_levels[self.opts.level]
-
     if not self.enabled then
         self.default_conceallevel = vim.o.conceallevel
     end
     if self.opts.default_state == 'on' then
         self:start_streamer_mode()
     end
-    print("Setup called.")
+end
+
+function M:start_with_defaults()
+    self.opts = vim.tbl_deep_extend('force', self.opts, default_opts)
+    vim.o.concealcursor = self.cursor_levels[self.opts.level]
+    if not self.enabled then
+        self.default_conceallevel = vim.o.conceallevel
+    end
+    if self.opts.default_state == 'on' then
+        self:start_streamer_mode()
+    end
+    self:generate_patterns(self.opts.keywords)
 end
 
 ---Alias for `configure_options`
@@ -221,7 +227,9 @@ end
 function M:generate_patterns(keywords)
     self.opts.patterns = self.opts.patterns or {}
     for i = 1, #keywords do
-        self.opts.patterns[#self.opts.patterns + 1] = self._BaseKeywordConcealPattern:format(keywords[i])
+        if not self.exclude.keywords[keywords[i]] then
+            self.opts.patterns[#self.opts.patterns + 1] = self._BaseKeywordConcealPattern:format(keywords[i])
+        end
     end
 end
 
