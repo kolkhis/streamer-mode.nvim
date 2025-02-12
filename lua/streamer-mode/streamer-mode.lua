@@ -110,8 +110,9 @@ M.exclude = {
 ---         - exclude_all_default_keywords = { 'alias', 'export' }
 ---     • exclude_all_default_keywords: Do not use default keywords, only use the
 ---       keywords you specify.
----     • exclude_all_default_paths: Do not use default paths, only use the paths you
+---     • exclude_default_paths: Do not use default paths, only use the paths you
 ---       specify.  
+---     • exclude_all_default_paths: Same as `exclude_default_paths`
 ---     • keywords: table = { 'keywords', 'to', 'conceal' }
 ---     • paths: table = { '*/paths/*', '*to_use/*' }
 ---     • level: string = 'secure' -- | 'soft' | 'edit'
@@ -192,7 +193,7 @@ function M:configure_options(user_opts)
     end
 
 
-    if not user_opts.exclude_all_default_paths then
+    if not user_opts.exclude_all_default_paths and not user_opts.exclude_default_paths then
         if user_opts.paths then
             for i = 1, #default_opts.paths do
                 self.opts.paths[#self.opts.paths + 1] = default_opts.paths[i]
