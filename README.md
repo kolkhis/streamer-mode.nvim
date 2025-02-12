@@ -158,6 +158,14 @@ require('streamer-mode').setup({
   paths = {
     '*',
   },
+  -- Exclude all the default keywords and only use the ones you specify
+  exclude_all_default_keywords = false, -- | true
+
+  -- Only exclude the given keywords from the default values
+  exclude_default_keywords = { 'keyword1', 'keyword2' },
+
+  -- Exclude the default path (which is '*', all paths) and only use the ones you specify
+  exclude_all_default_paths = true, 
 
   -- Any text appearing after one of the keywords specified here will be concealed.  
   -- They are case-insensitive.  
@@ -199,10 +207,15 @@ require('streamer-mode').setup({
 
 ##### All optional. Simply calling `require('streamer-mode').setup()` will use the defaults.  
 
-* `use_defaults` (Boolean): Whether or not to use the default paths and keywords.  
+* Deprecated - `use_defaults` (Boolean): Whether or not to use the default paths and keywords.  
     * If you do not specify this parameter, it will default to `true`.  
     * Note that if this is not set to `false`, then any custom `paths` and `keywords`  
       will be used **in addition** to the default paths and keywords.  
+* `exclude_default_keywords` (List-like table): The default values of `keywords` that
+  will **not** be used.  
+* `exclude_all_default_keywords` (Boolean): Whether or not to use default keywords.  
+    - `true`: Does not use any of the defaults, only what you specify in `.setup()`.  
+    - `false` (default): Use the default keywords.  
 * `keywords` (List-like Table): Keywords that will be concealed.  
     * Any text that appears **after** one of these keywords will be concealed 
       with `conceal_char` (default is `*`).  
@@ -280,13 +293,19 @@ require('streamer-mode').setup({
 ### Example Custom Setup  
 
 Here's an example of a custom configuration.  
-Note that passing in your own `paths` and `keywords` will disable the  
-default paths and keywords, unless you also pass in `use_defaults = true`.  
+
+
+Note that all the default `paths` and `keywords` will be used unless explicitly disabled:
+* `exclude_all_default_keywords = true` or `exclude_default_keywords = { 'keyword1', 'keyword2' }` etc.  
+* `exclude_all_default_paths = true` (there is only one value here, `'*'`).  
+* `use_defaults = true` is being deprecated, since this is the default behavior.  
 
 ```lua  
 require('streamer-mode').setup({
   -- Use the default paths and keywords in addition to your own.  
-  use_defaults = true,  
+  use_defaults = true,  -- Deprecated, use the 'exclude' options
+  exclude_default_keywords = { 'alias', 'export' },
+  exclude_all_default_paths = true, 
   paths = {
     -- While working in buffers that match any path or filetype listed here,
     -- streamer-mode will conceal all keywords in the `keywords` table.  
