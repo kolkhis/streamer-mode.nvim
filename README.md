@@ -121,6 +121,7 @@ Call `:StreamerModeOff` (`:SMoff`) to disable Streamer Mode, or simply toggle it
 
 Streamer Mode will be off be default, unless `default_state = 'on'` is passed during [setup](#setup)).  
 To toggle it on, use the command `:SM`, or `:SM(level)`.  
+
 Here's an example of binding it to a key:  
 ```lua  
 vim.keymap.set('n', '<leader>sm', '<cmd>SM<CR>', { silent = true })  
@@ -155,17 +156,18 @@ require('streamer-mode').setup({
   -- Streamer Mode will apply to any path in here. Defaults to all paths. 
   -- This means that Streamer Mode will hide any of the `keywords` below 
   -- when inside any of these directories or filetypes.  
-  paths = {
-    '*',
-  },
+  paths = { '*' },
   -- Exclude all the default keywords and only use the ones you specify
   exclude_all_default_keywords = false, -- | true
 
   -- Only exclude the given keywords from the default values
-  exclude_default_keywords = { 'keyword1', 'keyword2' },
+  exclude_default_keywords = {},
 
   -- Exclude the default path (which is '*', all paths) and only use the ones you specify
-  exclude_all_default_paths = true, 
+  exclude_default_paths = false, 
+
+  -- Same as `exclude_default_paths`
+  exclude_all_default_paths = false, 
 
   -- Any text appearing after one of the keywords specified here will be concealed.  
   -- They are case-insensitive.  
@@ -195,7 +197,6 @@ require('streamer-mode').setup({
 
   level = 'secure', -- | 'edit' | 'soft'  
   default_state = 'off', -- Whether or not streamer mode turns on when nvim is launched.  
-  conceal_char = '*',
 
   conceal_char = '*',  -- Default. This is what will be displayed instead  
                        -- of your secrets.  
@@ -207,10 +208,8 @@ require('streamer-mode').setup({
 
 ##### All optional. Simply calling `require('streamer-mode').setup()` will use the defaults.  
 
-* Deprecated - `use_defaults` (Boolean): Whether or not to use the default paths and keywords.  
-    * If you do not specify this parameter, it will default to `true`.  
-    * Note that if this is not set to `false`, then any custom `paths` and `keywords`  
-      will be used **in addition** to the default paths and keywords.  
+* **DEPRECATED** - `use_defaults` (Boolean): Whether or not to use the default paths and keywords.  
+    - Use the `exclude` options instead. This will have no effect.
 * `exclude_default_keywords` (List-like table): The default values of `keywords` that
   will **not** be used.  
 * `exclude_all_default_keywords` (Boolean): Whether or not to use default keywords.  
@@ -221,6 +220,7 @@ require('streamer-mode').setup({
       with `conceal_char` (default is `*`).  
     * It is possible to pass a Vim basic regular expression (BRE) as a keyword.  
 * `paths` (List-like Table): The paths and filetypes that Streamer Mode will apply to.  
+    * Globbing with `*` is supported.  
     * Pass in paths in the format: `paths = { '*/path/*' }`
     * Pass in filetypes in the same format: ` paths = { '*.txt' }`
 * `level` (String): The level in which Streamer Mode will be in effect.  
@@ -297,13 +297,14 @@ Here's an example of a custom configuration.
 
 Note that all the default `paths` and `keywords` will be used unless explicitly disabled:
 * `exclude_all_default_keywords = true` or `exclude_default_keywords = { 'keyword1', 'keyword2' }` etc.  
-* `exclude_all_default_paths = true` (there is only one value here, `'*'`).  
+* `exclude_default_paths = true` (there is only one value here, `'*'`).  
+    * `exclude_all_default_paths = true` will work too.  
 * `use_defaults = true` is being deprecated, since this is the default behavior.  
 
 ```lua  
 require('streamer-mode').setup({
   -- Use the default paths and keywords in addition to your own.  
-  use_defaults = true,  -- Deprecated, use the 'exclude' options
+  use_defaults = true,  -- Deprecated, use the 'exclude' options instead.
   exclude_default_keywords = { 'alias', 'export' },
   exclude_all_default_paths = true, 
   paths = {
@@ -345,7 +346,7 @@ There are three different levels, each with different behavior.
 * `'edit'` will allow the concealed text to become visible  
   only when the cursor goes into insert mode on the same line.  
 * `'soft'` will allow the concealed text to become visible  
-when the cursor is on the same line in any mode.  
+  when the cursor is on the same line in any mode.  
 
 
 
