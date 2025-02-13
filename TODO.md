@@ -37,4 +37,8 @@
   to exclude in string format.
     * e.g., `exclude_default_keywords = { "alias", "$env:" }`
 
+* [ ] Add different patterns for commands.  
+    - `--token <conceal>`
+    - `token: <conceal>`
 
+* [ ] Add option to conceal at *any* point in the line, not just the beginning.  
