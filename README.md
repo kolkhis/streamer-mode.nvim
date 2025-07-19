@@ -44,7 +44,7 @@ Just [open an issue](https://github.com/Kolkhis/streamer-mode.nvim/issues)!
 ## Current Features  
 
 By default, Streamer Mode currently supports the concealment of a number of  
-keywords (see [default settings](#default-settings).  
+keywords (see [default settings](#default-settings)).  
 You can specify your own keywords to conceal in the [`setup()`](#setup) function.  
 
 * Hides the contents of all SSH private keys (`id_rsa`, `id_ed25519`, `id_dsa`, etc.)  
