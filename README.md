@@ -55,7 +55,9 @@ You can specify your own keywords to conceal in the [`setup()`](#setup) function
 
 * Hides environment variables and sensitive `.gitconfig` information.  
 
-* Three different levels: Secure, Edit, and Soft  
+* Streamer Mode can operate at different **levels** of concealment, which determine how and when hidden text becomes visible.
+
+    * Three different levels: Secure, Edit, and Soft  
 
     * See [Levels](#levels) or `:help sm.levels` for more information on level behaviors.  
 
@@ -101,7 +103,7 @@ require('streamer-mode').setup()
 ```
 This will enable `streamer-mode.nvim` with the default settings.  
 
-After restarting Neovim, run `:StreamerMode` or `:SM` to toggle on Streamer Mode.  
+After restarting Neovim, run `:SM` to toggle on Streamer Mode.  
 It will be off by default.  
 
 To enable Streamer Mode on launch:  
@@ -110,7 +112,7 @@ require('streamer-mode').setup({ default_state = 'on' })
 ```
 
 Now Streamer Mode will be active every time a new Neovim session is launched.  
-Call `:StreamerModeOff` (`:SMoff`) to disable Streamer Mode, or simply toggle it with `:SM`.  
+Call `:SMoff` to disable Streamer Mode, or simply toggle it with `:SM`.  
 
 
 `streamer-mode.nvim` applies filters to most of the files that will contain sensitive information by default. See [default settings](#default-settings).  
@@ -143,10 +145,6 @@ The new mode will go into effect once the command is called.
 * `:StreamerModeEdit` (`:SMedit`) - Starts streamer mode with `edit` level enabled.  
 * `:StreamerModeSoft` (`:SMsoft`) - Starts streamer mode with `soft` level enabled.  
   
-
-
-## Advanced Setup:  
-##### These are just examples. To jump to all configuration options, see the [parameters](#Setup-Parameters) section.  
 
 ## Default Settings  
 
@@ -299,12 +297,10 @@ Note that all the default `paths` and `keywords` will be used unless explicitly 
 * `exclude_all_default_keywords = true` or `exclude_default_keywords = { 'keyword1', 'keyword2' }` etc.  
 * `exclude_default_paths = true` (there is only one value here, `'*'`).  
     * `exclude_all_default_paths = true` will work too.  
-* `use_defaults = true` is being deprecated, since this is the default behavior.  
 
 ```lua  
 require('streamer-mode').setup({
   -- Use the default paths and keywords in addition to your own.  
-  use_defaults = true,  -- Deprecated, use the 'exclude' options instead.
   exclude_default_keywords = { 'alias', 'export' },
   exclude_all_default_paths = true, 
   paths = {
@@ -347,14 +343,6 @@ There are three different levels, each with different behavior.
   only when the cursor goes into insert mode on the same line.  
 * `'soft'` will allow the concealed text to become visible  
   when the cursor is on the same line in any mode.  
-
-
-
-
-## Currently Working On  
-
-* [x] User customization of which keywords they'd like to filter.  
-* [x] Make `:SM` command a toggle - enable a single hotkey to turn StreamerMode both on and off. 
   
 
 ## Known Issues  
@@ -363,5 +351,3 @@ There are three different levels, each with different behavior.
 
 
 
-
-  
